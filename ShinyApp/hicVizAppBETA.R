@@ -3,6 +3,8 @@ library(shiny)
 library(rcytoscapejs)
 #Load sushi
 library(Sushi)
+#Load DataTables
+library(DT)
 
 #Set maximum upload size to 30 mb
 options(shiny.maxRequestSize = 30*1024^2)
@@ -122,7 +124,28 @@ ui <- fluidPage(title = "HiC Visualization App",
                                       rcytoscapejsOutput("cyplot", height="400px")
                                     )
                              )
+                           ),
+                           fluidRow(tags$hr()),
+                           fluidRow(
+                             column(12,
+                                    wellPanel(
+                                      h4("Clicked Node"),
+                                      verbatimTextOutput("clickedNode"),
+                                      h4("Connected Nodes"),
+                                      verbatimTextOutput("connectedNodes")
+                                    )
+                                    )
                            )
+                           # ,
+                           # fluidRow(tags$hr()),
+                           # fluidRow(
+                           #   h4("Selected Node Data"),
+                           #   dataTableOutput("nodeDataTable")
+                           # ),
+                           # fluidRow(
+                           #   h4("Selected Edge Data"),
+                           #   dataTableOutput("edgeDataTable")
+                           # )
                   )
                 ),
                 
@@ -257,8 +280,8 @@ server <- function(input, output, session) {
       data$node1 <- paste(data$chrom1,":",data$start1,"-",data$end1, sep = "")
       #Define node2
       data$node2 <- paste(data$chrom2,":",data$start2,"-",data$end2, sep = "")
-      #Define nodes (by appending node1 and node2)
-      nodes <- append(data$node1,data$node2)
+      #Define unique nodes (by appending node1 and node2)
+      nodes <- unique(append(data$node1,data$node2))
       
       id <- nodes
       name <- id
@@ -269,9 +292,42 @@ server <- function(input, output, session) {
       edgeData <- data.frame(source, target, stringsAsFactors=FALSE)
       edgeData$color <- data$color
       
-      network <- createCytoscapeJsNetwork(nodeData, edgeData)
+      ## Code for displaying reactive network of selected node with connected nodes
+      # Define network that will be used for displaying connected nodes as = edgeData
+      network <- edgeData
       
-      rcytoscapejs(network$nodes, network$edges, showPanzoom=TRUE, highlightConnectedNodes = TRUE, boxSelectionEnabled = TRUE)
+      # NOTE: Reactive variables used as functions networkReactive()
+      networkReactive <- reactive({
+        if(is.null(input$connectedNodes)) {
+          return(network)
+        } else {
+          t1 <- which(network$source %in% input$connectedNodes)
+          t2 <- which(network$target %in% input$connectedNodes)
+          idx <- unique(c(t1, t2))
+          return(network[idx,])
+        }
+      })
+      
+      output$nodeDataTable <- DT::renderDataTable({
+        tmp <- nodeData[which(id == input$clickedNode),]
+        DT::datatable(tmp, filter='bottom', style='bootstrap', options=list(pageLength=5))
+      })
+      
+      output$edgeDataTable <- DT::renderDataTable({
+        DT::datatable(networkReactive(), filter='bottom', style='bootstrap', options=list(pageLength=5))
+      })
+      
+      output$clickedNode = renderPrint({
+        input$clickedNode
+      })
+      
+      output$connectedNodes = renderPrint({
+        input$connectedNodes
+      })
+      
+      ## Generate cytoscape plots
+      cyNetwork <- createCytoscapeJsNetwork(nodeData, edgeData)
+      rcytoscapejs(cyNetwork$nodes, cyNetwork$edges, showPanzoom=TRUE, highlightConnectedNodes = TRUE, boxSelectionEnabled = TRUE)
       
     })
     
