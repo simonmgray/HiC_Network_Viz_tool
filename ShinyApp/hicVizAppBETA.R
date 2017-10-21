@@ -117,18 +117,21 @@ ui <- fluidPage(title = "HiC Visualization App",
                              ),
                              column(6,
                                     wellPanel(
-                                      downloadButton("downloadDataCy", "Download Plot"),
+                                      actionButton("saveImage", "Download as PNG"),
                                       tags$hr(),
                                       rcytoscapejsOutput("cyplot", height="400px")
                                     )
                              )
                            )
                   )
-                )
+                ),
+                
+                # Call javavscript cyjs.js in www folder to download Cytoscape network as PNG. From: https://github.com/cytoscape/r-cytoscape.js/tree/master/inst/examples/shiny
+                tags$head(tags$script(src="cyjs.js"))
 )
 
 # Server for Shiny
-server <- function(input, output) {
+server <- function(input, output, session) {
 
   # Define reactive expression to read uploaded file, only after it has been uploaded
   reqRead <- reactive({
@@ -326,6 +329,12 @@ server <- function(input, output) {
 
   })
   ########
+  
+  ####### Download Cytoscape Network as PNG (uses cyjs.js script in UI). From https://github.com/cytoscape/r-cytoscape.js/tree/master/inst/examples/shiny
+  observeEvent(input$saveImage, {
+    # NOTE: Message cannot be an empty string "", nothing will happen    
+    session$sendCustomMessage(type="saveImage", message="NULL")
+  })
 
 }
 
