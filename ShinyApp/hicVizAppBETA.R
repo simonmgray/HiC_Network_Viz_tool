@@ -191,8 +191,9 @@ server <- function(input, output, session) {
       chromstart = as.numeric(input$cStart); #Note that commandArgs makes everything a string, so must convert to numeric
       chromend = as.numeric(input$cStop);
       
-      # Read Ensembl.biomart.chr file to plot gene coordinates (Ensembl.biomart.chr files are available for all mouse genes per chromosome.)
-      genCode <- paste("Gencode.",chrom,".txt",sep = "")
+      # Read Ensembl.biomart.chr file from googleStorage public URL to plot gene coordinates (Ensembl.biomart.chr files are available for all mouse genes per chromosome.)
+      geneCChNumber_generic = "https://storage.googleapis.com/gencode_ch_data/";
+      genCode <- paste(geneCChNumber_generic,"Gencode.",chrom,".txt",sep = "")
       genes <- read.delim(genCode,header=TRUE);
       
       # Bezier curve plot; note: colorby=data$bezierColor in order to allow user to change color scheme reactively
@@ -228,8 +229,9 @@ server <- function(input, output, session) {
     chromstart = as.numeric(input$cStart); #Note that commandArgs makes everything a string, so must convert to numeric
     chromend = as.numeric(input$cStop);
     
-    # Read Ensembl.biomart.chr file to plot gene coordinates (Ensembl.biomart.chr files are available for all mouse genes per chromosome.)
-    genCode <- paste("Gencode.",chrom,".txt",sep = "")
+    # Read Ensembl.biomart.chr file from googleStorage public URL to plot gene coordinates (Ensembl.biomart.chr files are available for all mouse genes per chromosome.)
+    geneCChNumber_generic = "https://storage.googleapis.com/gencode_ch_data/";
+    genCode <- paste(geneCChNumber_generic,"Gencode.",chrom,".txt",sep = "")
     genes <- read.delim(genCode,header=TRUE);
     
     # Bezier curve plot
@@ -296,7 +298,8 @@ server <- function(input, output, session) {
       # Define network that will be used for displaying connected nodes as = edgeData
       network <- edgeData
       
-      # NOTE: Reactive variables used as functions networkReactive()
+      # NOTE: Reactive variables used as functions networkReactive(). Code block taken verbatim from: https://github.com/cytoscape/r-cytoscape.js/tree/master/inst/examples/shiny
+      # Start code block from: https://github.com/cytoscape/r-cytoscape.js/tree/master/ins
       networkReactive <- reactive({
         if(is.null(input$connectedNodes)) {
           return(network)
@@ -323,7 +326,7 @@ server <- function(input, output, session) {
       
       output$connectedNodes = renderPrint({
         input$connectedNodes
-      })
+      }) #End code block from: From: https://github.com/cytoscape/r-cytoscape.js/tree/master/ins
       
       ## Generate cytoscape plots
       cyNetwork <- createCytoscapeJsNetwork(nodeData, edgeData)
